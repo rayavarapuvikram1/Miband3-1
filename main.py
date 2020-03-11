@@ -29,18 +29,15 @@ def custom_missed_call():
     band.send_custom_alert(4)
 def l(x):
     print 'Realtime heart BPM:', x
-def heart_beat():
-    band.start_raw_data_realtime(heart_measure_callback=l)
-    raw_input('Press Enter to continue')
-def sensor():
-    band.start_raw_data_realtime(accel_raw_callback=l)
-    raw_input('Press Enter to continue')
+
 def change_date():
     band.change_date()
 
 def but_click():
-    band.clicked()
-    time.sleep(4)
+    band.subscribeNotifications()
+    while True:
+        band.clicked()
+        time.sleep(2)
 # sudo gatttool -b FE:1D:5C:3B:50:61 -I -t random
 # handle: 0x004c, char properties: 0x10, char value handle: 0x004d, uuid: 00000010-0000-3512-2118-0009af100700
 
@@ -57,7 +54,6 @@ msg_alert = FunctionItem("Send a Message Notification", custom_message)
 call_alert = FunctionItem("Send a Call Notification", custom_call)
 miss_call_alert = FunctionItem("Send a Missed Call Notification", custom_missed_call)
 change_date_time = FunctionItem("Reset Date and Time", change_date)
-heart_beat_menu = FunctionItem("Get Heart BPM", heart_beat)
 click_menu = FunctionItem("Remote",but_click)
 
 
@@ -67,5 +63,4 @@ menu.append_item(msg_alert)
 menu.append_item(call_alert)
 menu.append_item(change_date_time)
 menu.append_item(miss_call_alert)
-menu.append_item(heart_beat_menu)
 menu.show()
