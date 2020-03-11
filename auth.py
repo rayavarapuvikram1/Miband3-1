@@ -8,7 +8,7 @@ from bluepy.btle import *
 import crc16
 import os
 import struct
-
+import binascii
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 
 
@@ -39,14 +39,16 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device._send_key()
             else:
                 self.device.state = AUTH_STATES.AUTH_FAILED
-        elif hnd == self.device._char_heart_measure.getHandle():
-            self.device.queue.put((QUEUE_TYPES.HEART, data))
+        # elif hnd == self.device._char_heart_measure.getHandle():
+        #     self.device.queue.put((QUEUE_TYPES.HEART, data))
         elif hnd == 0x38:
             # Not sure about this, need test
             if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
             elif len(data) == 16:
                 self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
+        elif hnd == 0x46:
+            print "Hii"
         else:
             self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
@@ -80,9 +82,10 @@ class MiBand3(Peripheral):
         self.svc_1 = self.getServiceByUUID(UUIDS.SERVICE_MIBAND1)
         self.svc_2 = self.getServiceByUUID(UUIDS.SERVICE_MIBAND2)
 
-        self._char_auth = self.svc_2.getCharacteristics(UUIDS.CHARACTERISTIC_AUTH)[0]
-        self._desc_auth = self._char_auth.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
-
+        self._char_auth = self.svc_2.getCharacteristics(
+            UUIDS.CHARACTERISTIC_AUTH)[0]
+        self._desc_auth = self._char_auth.getDescriptors(
+            forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
 
         # Enable auth service notifications on startup
         self._auth_notif(True)
@@ -99,7 +102,8 @@ class MiBand3(Peripheral):
             self._log.info("Disabling Auth Service notifications status...")
             self._desc_auth.write(b"\x00\x00", True)
         else:
-            self._log.error("Something went wrong while changing the Auth Service notifications status...")
+            self._log.error(
+                "Something went wrong while changing the Auth Service notifications status...")
 
     def _encrypt(self, message):
         aes = AES.new(self._KEY, AES.MODE_ECB)
@@ -142,15 +146,19 @@ class MiBand3(Peripheral):
         hours = struct.unpack('b', bytes[4])[0] if len(bytes) >= 5 else None
         minutes = struct.unpack('b', bytes[5])[0] if len(bytes) >= 6 else None
         seconds = struct.unpack('b', bytes[6])[0] if len(bytes) >= 7 else None
-        day_of_week = struct.unpack('b', bytes[7])[0] if len(bytes) >= 8 else None
-        fractions256 = struct.unpack('b', bytes[8])[0] if len(bytes) >= 9 else None
+        day_of_week = struct.unpack('b', bytes[7])[
+            0] if len(bytes) >= 8 else None
+        fractions256 = struct.unpack('b', bytes[8])[
+            0] if len(bytes) >= 9 else None
 
         return {"date": datetime(*(year, month, day, hours, minutes, seconds)), "day_of_week": day_of_week, "fractions256": fractions256}
 
     def _parse_battery_response(self, bytes):
         level = struct.unpack('b', bytes[1])[0] if len(bytes) >= 2 else None
-        last_level = struct.unpack('b', bytes[19])[0] if len(bytes) >= 20 else None
-        status = 'normal' if struct.unpack('b', bytes[2])[0] == 0 else "charging"
+        last_level = struct.unpack('b', bytes[19])[
+            0] if len(bytes) >= 20 else None
+        status = 'normal' if struct.unpack(
+            'b', bytes[2])[0] == 0 else "charging"
         datetime_last_charge = self._parse_date(bytes[11:18])
         datetime_last_off = self._parse_date(bytes[3:10])
 
@@ -175,7 +183,6 @@ class MiBand3(Peripheral):
             self.queue.put(res)
             return None
         return res[1]
-
 
     # API ####################################################################
 
@@ -219,7 +226,8 @@ class MiBand3(Peripheral):
         return self._parse_battery_response(char.read())
 
     def get_current_time(self):
-        char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CURRENT_TIME)[0]
+        char = self.svc_1.getCharacteristics(
+            UUIDS.CHARACTERISTIC_CURRENT_TIME)[0]
         return self._parse_date(char.read()[0:9])
 
     def get_revision(self):
@@ -235,17 +243,18 @@ class MiBand3(Peripheral):
         return data
 
     def set_encoding(self, encoding="en_US"):
-        char = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
+        char = self.svc_1.getCharacteristics(
+            UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
         packet = struct.pack('5s', encoding)
         packet = b'\x06\x17\x00' + packet
         return char.write(packet)
-
 
     def get_serial(self):
         svc = self.getServiceByUUID(UUIDS.SERVICE_DEVICE_INFO)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_SERIAL)[0]
         data = char.read()
-        serial = struct.unpack('12s', data[-12:])[0] if len(data) == 12 else None
+        serial = struct.unpack(
+            '12s', data[-12:])[0] if len(data) == 12 else None
         return serial
 
     def get_steps(self):
@@ -288,7 +297,7 @@ class MiBand3(Peripheral):
         elif type == 4:
             base_value = '\x04\x01'
         elif type == 3:
-                base_value = '\x03\x01'
+            base_value = '\x03\x01'
         phone = raw_input('Sender Name or Caller ID')
         svc = self.getServiceByUUID(UUIDS.SERVICE_ALERT_NOTIFICATION)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CUSTOM_ALERT)[0]
@@ -309,13 +318,16 @@ class MiBand3(Peripheral):
         #
         hour = int(time[:2])
         minute = int(time[3:5])
-        seconds =  int(time[6:])
+        seconds = int(time[6:])
         #
-        write_val = format(rem, '#04x') + format(fraction, '#04x') + format(month, '#04x') + format(day, '#04x') + format(hour, '#04x') + format(minute, '#04x') + format(seconds, '#04x') + format(5, '#04x') + format(0, '#04x') + format(0, '#04x') +'0x16'
+        write_val = format(rem, '#04x') + format(fraction, '#04x') + format(month, '#04x') + format(day, '#04x') + format(hour, '#04x') + \
+            format(minute, '#04x') + format(seconds, '#04x') + format(5,
+                                                                      '#04x') + format(0, '#04x') + format(0, '#04x') + '0x16'
         write_val = write_val.replace('0x', '\\x')
         print(write_val)
         char.write(write_val, withResponse=True)
         raw_input('Date Changed, press any key to continue')
+
     def dfuUpdate(self, fileName):
         print('Update Firmware/Resource')
         svc = self.getServiceByUUID(UUIDS.SERVICE_DFU_FIRMWARE)
@@ -323,14 +335,14 @@ class MiBand3(Peripheral):
         extension = os.path.splitext(fileName)[1][1:]
         fileSize = os.path.getsize(fileName)
         # calculating crc checksum of firmware
-        #crc16
+        # crc16
         crc = 0xFFFF
         with open(fileName) as f:
             while True:
                 c = f.read(1)
                 if not c:
                     break
-                cInt = int(c.encode('hex'), 16) #converting hex to int
+                cInt = int(c.encode('hex'), 16)  # converting hex to int
                 # now calculate crc
                 crc = ((crc >> 8) | (crc << 8)) & 0xFFFF
                 crc ^= (cInt & 0xff)
@@ -342,19 +354,22 @@ class MiBand3(Peripheral):
         raw_input('Press Enter to Continue')
         if extension.lower() == "res":
             # file size hex value is
-            char.write('\x01'+ struct.pack("<i", fileSize)[:-1] +'\x02', withResponse=True)
+            char.write('\x01' + struct.pack("<i", fileSize)
+                       [:-1] + '\x02', withResponse=True)
         elif extension.lower() == "fw":
-            char.write('\x01' + struct.pack("<i", fileSize)[:-1], withResponse=True)
+            char.write('\x01' + struct.pack("<i", fileSize)
+                       [:-1], withResponse=True)
         char.write("\x03", withResponse=True)
-        char1 = svc.getCharacteristics(UUIDS.CHARACTERISTIC_DFU_FIRMWARE_WRITE)[0]
+        char1 = svc.getCharacteristics(
+            UUIDS.CHARACTERISTIC_DFU_FIRMWARE_WRITE)[0]
         with open(fileName) as f:
-          while True:
-            c = f.read(20) #takes 20 bytes :D
-            if not c:
-              print "Update Over"
-              break
-            print('Writing Resource', c.encode('hex'))
-            char1.write(c)
+            while True:
+                c = f.read(20)  # takes 20 bytes :D
+                if not c:
+                    print "Update Over"
+                    break
+                print('Writing Resource', c.encode('hex'))
+                char1.write(c)
         # after update is done send these values
         char.write(b'\x00', withResponse=True)
         self.waitForNotifications(0.5)
@@ -368,40 +383,60 @@ class MiBand3(Peripheral):
         raw_input('Press Enter to Continue')
 
     def start_get_previews_data(self, start_timestamp):
-            self._auth_previews_data_notif(True)
-            self.waitForNotifications(0.1)
-            print("Trigger activity communication")
-            year = struct.pack("<H", start_timestamp.year)
-            month = struct.pack("<H", start_timestamp.month)[0]
-            day = struct.pack("<H", start_timestamp.day)[0]
-            hour = struct.pack("<H", start_timestamp.hour)[0]
-            minute = struct.pack("<H", start_timestamp.minute)[0]
-            ts = year + month + day + hour + minute
-            trigger = b'\x01\x01' + ts + b'\x00\x08'
-            self._char_fetch.write(trigger, False)
-            self.active = True
-    
-    def subscribeNotifications(self):
-            print("Hii")     
+        self._auth_previews_data_notif(True)
+        self.waitForNotifications(0.1)
+        print("Trigger activity communication")
+        year = struct.pack("<H", start_timestamp.year)
+        month = struct.pack("<H", start_timestamp.month)[0]
+        day = struct.pack("<H", start_timestamp.day)[0]
+        hour = struct.pack("<H", start_timestamp.hour)[0]
+        minute = struct.pack("<H", start_timestamp.minute)[0]
+        ts = year + month + day + hour + minute
+        trigger = b'\x01\x01' + ts + b'\x00\x08'
+        self._char_fetch.write(trigger, False)
+        self.active = True
 
-    def clicked(self):
-                
-        NOTIFY_SERVICE = UUIDS.BASE % '2902'
-        sub = Descriptor(NOTIFY_SERVICE)
-        sub.write(0x100)
-   
-        char_m = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
+    def subscribeNotifications(self):
+        setup_data = b'\x01\x00'
+        # NOTIFY_SERVICE = '00002902-0000-1000-8000-00805f9b34fb'
+        # for notify in notifys:
+        #     print(notify.getHandle())
+#[<bluepy.btle.Characteristic instance at 0x7f09821b1320>, <bluepy.btle.Characteristic instance at 0x7f0981908640>, <bluepy.btle.Characteristic instance at 0x7f09819083c0>, <bluepy.btle.Characteristic instance at 0x7f0981908460>, <bluepy.btle.Characteristic instance at 0x7f0981908500>, <bluepy.btle.Characteristic instance at 0x7f09819085a0>, <bluepy.btle.Characteristic instance at 0x7f0981908a50>, <bluepy.btle.Characteristic instance at 0x7f0981908af0>, <bluepy.btle.Characteristic instance at 0x7f0981908b90>, <bluepy.btle.Characteristic instance at 0x7f0981908c30>, <bluepy.btle.Characteristic instance at 0x7f0981908cd0>]
+        # notify_handle = 0x0029 + 1
+        # notifys.write(setup_data, True)
+        notifys = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
+
+        ccc_desc = notifys.getDescriptors(forUUID=0x2902)[0]
+        ccc_desc.write(setup_data)
+        # print(notifys.write(setup_data,True))
+        # desc = notifys.getDescriptors(notifys)
+        # print(desc.strip())
+        # print notifys
+        return "Done Baby"
+        
+
+    # def clicked(self):
+        # self.waitForNotifications(2)
+
         # char_m = self.getServiceByUUID(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
         # char_d = self.getDescriptors(forUUID=UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
-        print(char_m.supportsRead())
+        # print(char_m.supportsRead())
         # print(char_m.read())
 
 
-
-
-
-#         handle: 0x000b 	 value: 02 00 
-# handle: 0x001a 	 value: 00 00 
-# handle: 0x0022 	 value: 00 00 
-# handle: 0x0029 	 value: 00 00 
-# handle: 0x002c 	 value: 00 00 
+#         handle: 0x000b 	 value: 02 00
+# handle: 0x001a 	 value: 00 00
+# handle: 0x0022 	 value: 00 00
+# handle: 0x0029 	 value: 00 00
+# handle: 0x002c 	 value: 00 00
+# 40
+# 43
+# 46
+# 49
+# 52
+# 55
+# 58
+# 61
+# 64
+# 67
+# 70

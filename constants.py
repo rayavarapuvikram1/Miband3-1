@@ -15,7 +15,7 @@ class UUIDS(object):
     __metaclass__ = Immutable
 
     BASE = "0000%s-0000-1000-8000-00805f9b34fb"
-
+# 00002902-0000-1000-8000-00805f9b34fb"
     SERVICE_MIBAND1 = BASE % 'fee0'
     SERVICE_MIBAND2 = BASE % 'fee1'
 
