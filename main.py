@@ -38,7 +38,13 @@ def sensor():
 def change_date():
     band.change_date()
 
-MAC_ADDR = "DD:68:1B:8E:0C:08"
+def but_click():
+    band.clicked()
+    time.sleep(4)
+# sudo gatttool -b FE:1D:5C:3B:50:61 -I -t random
+# handle: 0x004c, char properties: 0x10, char value handle: 0x004d, uuid: 00000010-0000-3512-2118-0009af100700
+
+MAC_ADDR = "C0:D5:2D:E4:24:E1"
 print ('Attempting to connect to ', MAC_ADDR)
 
 band = MiBand3(MAC_ADDR, debug=True)
@@ -52,7 +58,10 @@ call_alert = FunctionItem("Send a Call Notification", custom_call)
 miss_call_alert = FunctionItem("Send a Missed Call Notification", custom_missed_call)
 change_date_time = FunctionItem("Reset Date and Time", change_date)
 heart_beat_menu = FunctionItem("Get Heart BPM", heart_beat)
+click_menu = FunctionItem("Remote",but_click)
 
+
+menu.append_item(click_menu)
 menu.append_item(detail_menu)
 menu.append_item(msg_alert)
 menu.append_item(call_alert)

@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 from Crypto.Cipher import AES
 from Queue import Queue, Empty
-from bluepy.btle import Peripheral, DefaultDelegate, ADDR_TYPE_RANDOM, BTLEException
+from bluepy.btle import *
 import crc16
 import os
 import struct
@@ -467,3 +467,10 @@ class MiBand3(Peripheral):
             trigger = b'\x01\x01' + ts + b'\x00\x08'
             self._char_fetch.write(trigger, False)
             self.active = True
+    
+    def clicked(self):
+            print("Hii")            
+            # char_m = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
+            char_m = self.getServiceByUUID(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
+            # char_d = self.getDescriptors(forUUID=UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
+            print(char_m)
