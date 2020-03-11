@@ -35,17 +35,9 @@ def change_date():
 
 def but_click():
     print(band.subscribeNotifications())
-    # band.waitForNotifications()
-    # while True:
-    #     band.clicked()
-    # time.sleep(4)
-
-
-    print("writing done")
     while True:
         if band.waitForNotifications(1):
             print("Notification")
-    print(".")
 # sudo gatttool -b FE:1D:5C:3B:50:61 -I -t random
 # handle: 0x004c, char properties: 0x10, char value handle: 0x004d, uuid: 00000010-0000-3512-2118-0009af100700
 

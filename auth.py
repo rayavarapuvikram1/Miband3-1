@@ -47,8 +47,8 @@ class AuthenticationDelegate(DefaultDelegate):
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
             elif len(data) == 16:
                 self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
-        elif hnd == 0x46:
-            print "Hii"
+        elif hnd == 0x46: # for notificaton from mi band to control
+            pass
         else:
             self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
@@ -398,45 +398,7 @@ class MiBand3(Peripheral):
 
     def subscribeNotifications(self):
         setup_data = b'\x01\x00'
-        # NOTIFY_SERVICE = '00002902-0000-1000-8000-00805f9b34fb'
-        # for notify in notifys:
-        #     print(notify.getHandle())
-#[<bluepy.btle.Characteristic instance at 0x7f09821b1320>, <bluepy.btle.Characteristic instance at 0x7f0981908640>, <bluepy.btle.Characteristic instance at 0x7f09819083c0>, <bluepy.btle.Characteristic instance at 0x7f0981908460>, <bluepy.btle.Characteristic instance at 0x7f0981908500>, <bluepy.btle.Characteristic instance at 0x7f09819085a0>, <bluepy.btle.Characteristic instance at 0x7f0981908a50>, <bluepy.btle.Characteristic instance at 0x7f0981908af0>, <bluepy.btle.Characteristic instance at 0x7f0981908b90>, <bluepy.btle.Characteristic instance at 0x7f0981908c30>, <bluepy.btle.Characteristic instance at 0x7f0981908cd0>]
-        # notify_handle = 0x0029 + 1
-        # notifys.write(setup_data, True)
         notifys = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
-
         ccc_desc = notifys.getDescriptors(forUUID=0x2902)[0]
         ccc_desc.write(setup_data)
-        # print(notifys.write(setup_data,True))
-        # desc = notifys.getDescriptors(notifys)
-        # print(desc.strip())
-        # print notifys
         return "Done Baby"
-        
-
-    # def clicked(self):
-        # self.waitForNotifications(2)
-
-        # char_m = self.getServiceByUUID(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
-        # char_d = self.getDescriptors(forUUID=UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
-        # print(char_m.supportsRead())
-        # print(char_m.read())
-
-
-#         handle: 0x000b 	 value: 02 00
-# handle: 0x001a 	 value: 00 00
-# handle: 0x0022 	 value: 00 00
-# handle: 0x0029 	 value: 00 00
-# handle: 0x002c 	 value: 00 00
-# 40
-# 43
-# 46
-# 49
-# 52
-# 55
-# 58
-# 61
-# 64
-# 67
-# 70
