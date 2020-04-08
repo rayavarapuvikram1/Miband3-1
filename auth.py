@@ -11,8 +11,9 @@ import os
 import struct
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 from threading import Event
+slide1 = ""
 
-slide1=""
+
 class AuthenticationDelegate(DefaultDelegate):
 
     """This Class inherits DefaultDelegate to handle the authentication process."""
@@ -23,9 +24,6 @@ class AuthenticationDelegate(DefaultDelegate):
 
     def handleNotification(self, hnd, data):
         global slide1
-        # print hex(hnd),"  ",data
-        # for character in data:
-            # print character.encode('hex')
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':
                 self.device._req_rdn()
@@ -47,28 +45,27 @@ class AuthenticationDelegate(DefaultDelegate):
         # elif hnd == self.device._char_heart_measure.getHandle():
         #     self.device.queue.put((QUEUE_TYPES.HEART, data))
 
-        elif hnd ==0x35: # For Acceleration data i think its actually gyroscope -VR
+        elif hnd == 0x35:  # For Acceleration data i think its actually gyroscope -VR
             if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
                 print "Hello"
         elif hnd == 0x38:
             # Not sure about this, need test
             if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
-                self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data)) #useless - VR
+                self.device.queue.put(
+                    (QUEUE_TYPES.RAW_ACCEL, data))  # useless - VR
             elif len(data) == 16:
                 slide = str(data.encode('hex'))
                 slide = slide[22::]
-                if (slide == slide1):
-                    # slide1 = slide[1:3]
-                    pass
-                elif (slide != slide1):
+                if (slide != slide1):
+                    if len(slide1) > 0:
+                        self.device.slider_feedback()
+                        print("Change man")
                     slide1 = slide
-                    print("Change man")
-                    
                 # self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
             else:
                 print("DDDkkk")
-        elif hnd == 0x46: # for notificaton from mi band 2 to button presentation control
+        elif hnd == 0x46:  # for notificaton from mi band 2 to button presentation control
             print "Slider here"
         else:
             self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
@@ -108,10 +105,11 @@ class MiBand3(Peripheral):
         self._desc_auth = self._char_auth.getDescriptors(
             forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
 
-        self._char_sensor_measure = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_MEASURE)[0]
-        self._char_sensor_ctrl = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_SENSOR_CONTROL)[0]
+        self._char_sensor_measure = self.svc_1.getCharacteristics(
+            UUIDS.CHARACTERISTIC_SENSOR_MEASURE)[0]
+        self._char_sensor_ctrl = self.svc_1.getCharacteristics(
+            UUIDS.CHARACTERISTIC_SENSOR_CONTROL)[0]
         self._stop_getting_real_time = Event()
-
 
         # Enable auth service notifications on startup
         self._auth_notif(True)
@@ -260,7 +258,8 @@ class MiBand3(Peripheral):
         if accel_raw_callback:
             self.accel_raw_callback = accel_raw_callback
 
-        char_sensor_desc = self._char_sensor_measure.getDescriptors(forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
+        char_sensor_desc = self._char_sensor_measure.getDescriptors(
+            forUUID=UUIDS.NOTIFICATION_DESCRIPTOR)[0]
         self._log.info("Enabling accel raw data notification")
         self._char_sensor_ctrl.write(b'\x01\x01\x19')
         self._log.info("Start getting sensor data")
@@ -274,8 +273,9 @@ class MiBand3(Peripheral):
             # send ping request every 60 sec
             if duration and (time.time() - t) > duration:
                 print "Executed"
-                char_sensor_desc.write(b'\x00\x00')   #stop getting notifications
-                self._char_sensor_ctrl.write(b'\x03') #stopping
+                # stop getting notifications
+                char_sensor_desc.write(b'\x00\x00')
+                self._char_sensor_ctrl.write(b'\x03')  # stopping
                 break
             if (time.time() - t) > 60:
                 self._char_sensor_ctrl.write(b'\x01\x01\x19')
@@ -364,6 +364,11 @@ class MiBand3(Peripheral):
         svc = self.getServiceByUUID(UUIDS.SERVICE_ALERT_NOTIFICATION)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CUSTOM_ALERT)[0]
         char.write(base_value+phone, withResponse=True)
+
+    def slider_feedback(self, text="Next"):
+        svc = self.getServiceByUUID(UUIDS.SERVICE_ALERT_NOTIFICATION)
+        char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CUSTOM_ALERT)[0]
+        char.write('\x05\x01'+text, withResponse=True)
 
     def change_date(self):
         print('Change date and time')
@@ -460,13 +465,15 @@ class MiBand3(Peripheral):
 
     def subscribeNotifications(self):
         setup_data = b'\x01\x00'
-        notifys = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
+        notifys = self.svc_1.getCharacteristics(
+            UUIDS.CHARACTERISTIC_DEVICEEVENT)[0]
         ccc_desc = notifys.getDescriptors(forUUID=0x2902)[0]
         ccc_desc.write(setup_data)
         return "Done"
 
     def change_slide(self):
-        self.button_chars = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
+        self.button_chars = self.svc_1.getCharacteristics(
+            UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
         notify_setup_data = b'\x03\x00'
         ccc_desc = self.button_chars.getDescriptors(forUUID=0x2902)[0]
         ccc_desc.write(notify_setup_data)
