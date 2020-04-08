@@ -12,7 +12,7 @@ import struct
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 from threading import Event
 
-
+slide1=""
 class AuthenticationDelegate(DefaultDelegate):
 
     """This Class inherits DefaultDelegate to handle the authentication process."""
@@ -22,6 +22,10 @@ class AuthenticationDelegate(DefaultDelegate):
         self.device = device
 
     def handleNotification(self, hnd, data):
+        global slide1
+        # print hex(hnd),"  ",data
+        # for character in data:
+            # print character.encode('hex')
         if hnd == self.device._char_auth.getHandle():
             if data[:3] == b'\x10\x01\x01':
                 self.device._req_rdn()
@@ -43,17 +47,28 @@ class AuthenticationDelegate(DefaultDelegate):
         # elif hnd == self.device._char_heart_measure.getHandle():
         #     self.device.queue.put((QUEUE_TYPES.HEART, data))
 
-        elif hnd ==0x35: # For Acceleration data i think its actually gyroscope
+        elif hnd ==0x35: # For Acceleration data i think its actually gyroscope -VR
             if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
                 print "Hello"
         elif hnd == 0x38:
             # Not sure about this, need test
             if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
-                self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data)) #useless
+                self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data)) #useless - VR
             elif len(data) == 16:
-                self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
-        elif hnd == 0x46: # for notificaton from mi band to button presentation control
+                slide = str(data.encode('hex'))
+                slide = slide[22::]
+                if (slide == slide1):
+                    # slide1 = slide[1:3]
+                    pass
+                elif (slide != slide1):
+                    slide1 = slide
+                    print("Change man")
+                    
+                # self.device.queue.put((QUEUE_TYPES.RAW_HEART, data))
+            else:
+                print("DDDkkk")
+        elif hnd == 0x46: # for notificaton from mi band 2 to button presentation control
             print "Slider here"
         else:
             self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
@@ -291,6 +306,7 @@ class MiBand3(Peripheral):
     def set_encoding(self, encoding="en_US"):
         char = self.svc_1.getCharacteristics(
             UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
+        print(str(char))
         packet = struct.pack('5s', encoding)
         packet = b'\x06\x17\x00' + packet
         return char.write(packet)
@@ -448,3 +464,9 @@ class MiBand3(Peripheral):
         ccc_desc = notifys.getDescriptors(forUUID=0x2902)[0]
         ccc_desc.write(setup_data)
         return "Done"
+
+    def change_slide(self):
+        self.button_chars = self.svc_1.getCharacteristics(UUIDS.CHARACTERISTIC_CONFIGURATION)[0]
+        notify_setup_data = b'\x03\x00'
+        ccc_desc = self.button_chars.getDescriptors(forUUID=0x2902)[0]
+        ccc_desc.write(notify_setup_data)
