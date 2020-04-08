@@ -11,6 +11,10 @@ import os
 import struct
 from constants import UUIDS, AUTH_STATES, ALERT_TYPES, QUEUE_TYPES
 from threading import Event
+from pynput.keyboard import Key, Controller
+
+keyboard = Controller()
+
 slide1 = ""
 
 
@@ -45,6 +49,14 @@ class AuthenticationDelegate(DefaultDelegate):
         # elif hnd == self.device._char_heart_measure.getHandle():
         #     self.device.queue.put((QUEUE_TYPES.HEART, data))
 
+        elif hnd ==0x4d: #for call mute and cut
+            mute_reject = str(data.encode('hex'))
+            # print (mute_reject) # prints data
+            if mute_reject== '09':
+                print "Mute"
+            elif mute_reject == '07':
+                keyboard.press(Key.left)
+                keyboard.release(Key.left)
         elif hnd == 0x35:  # For Acceleration data i think its actually gyroscope -VR
             if len(data) == 20 and struct.unpack('b', data[0])[0] == 1:
                 self.device.queue.put((QUEUE_TYPES.RAW_ACCEL, data))
@@ -59,6 +71,8 @@ class AuthenticationDelegate(DefaultDelegate):
                 slide = slide[22::]
                 if (slide != slide1):
                     if len(slide1) > 0:
+                        keyboard.press(Key.right)
+                        keyboard.release(Key.right)
                         self.device.slider_feedback()
                         print("Change man")
                     slide1 = slide
@@ -368,7 +382,7 @@ class MiBand3(Peripheral):
     def slider_feedback(self, text="Next"):
         svc = self.getServiceByUUID(UUIDS.SERVICE_ALERT_NOTIFICATION)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CUSTOM_ALERT)[0]
-        char.write('\x05\x01'+text, withResponse=True)
+        char.write('\x03\x01'+text, withResponse=True)
 
     def change_date(self):
         print('Change date and time')
