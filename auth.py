@@ -71,8 +71,8 @@ class AuthenticationDelegate(DefaultDelegate):
                 slide = slide[22::]
                 if (slide != slide1):
                     if len(slide1) > 0:
-                        keyboard.press(Key.right)
-                        keyboard.release(Key.right)
+                        # keyboard.press(Key.right)
+                        # keyboard.release(Key.right)
                         self.device.slider_feedback()
                         print("Change man")
                     slide1 = slide
@@ -81,6 +81,7 @@ class AuthenticationDelegate(DefaultDelegate):
                 print("DDDkkk")
         elif hnd == 0x46:  # for notificaton from mi band 2 to button presentation control
             print "Slider here"
+
         else:
             self.device._log.error("Unhandled Response " + hex(hnd) + ": " +
                                    str(data.encode("hex")) + " len:" + str(len(data)))
@@ -382,7 +383,7 @@ class MiBand3(Peripheral):
     def slider_feedback(self, text="Next"):
         svc = self.getServiceByUUID(UUIDS.SERVICE_ALERT_NOTIFICATION)
         char = svc.getCharacteristics(UUIDS.CHARACTERISTIC_CUSTOM_ALERT)[0]
-        char.write('\x03\x01'+text, withResponse=True)
+        char.write('\x00\x01'+text, withResponse=True)
 
     def change_date(self):
         print('Change date and time')

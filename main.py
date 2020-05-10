@@ -64,7 +64,7 @@ def but_click():
 # sudo gatttool -b FE:1D:5C:3B:50:61 -I -t random
 # handle: 0x004c, char properties: 0x10, char value handle: 0x004d, uuid: 00000010-0000-3512-2118-0009af100700
 
-MAC_ADDR = "DD:BF:06:77:BE:9C"
+MAC_ADDR = "FB:FB:11:96:CD:EE"
 print ('Attempting to connect to ', MAC_ADDR)
 
 band = MiBand3(MAC_ADDR, debug=True)
