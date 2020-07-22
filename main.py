@@ -27,8 +27,42 @@ def custom_call():
     band.send_custom_alert(3)
 def custom_missed_call():
     band.send_custom_alert(4)
+'''
+when setting the alarm write __value__ to 00000003-0000-3512-2118-0009af100700
 
+You can get the value from the following
 
+The value has 5 parts :
+    1 | 02 for alarm
+    
+    2 | 00/c0/80 --> 
+        c0 represent to turn on 1st alarm without snooze and 80 represent with snooze
+        c1 represent 02nd alarm
+        c2 represent 03rd alarm
+        c3 represent 04th alarm
+        c4 represent 05th alarm
+        c5 represent 06th alarm
+        c6 represent 07th alarm
+        c7 represent 08th alarm
+        c8 represent 09th alarm
+        c8 represent 10th alarm
+
+    3 | 06 # 
+        Hour of alarm time
+
+    4 | 1e # 
+        minutes of alarm time
+        
+    5 | 0x01 - 0b00000001 - Monday
+        0x02 - 0b00000010 - Tuesday
+        0x04 - 0b00000100 - Wednesday
+        0x08 - 0b00001000 - Thursday
+        0x10 - 0b00010000 - Friday
+        0x20 - 0b00100000 - Saturday
+        0x40 - 0b01000000 - Sunday
+        
+        If you want multiple days add the hexes of those days.
+'''
 def change_date():
     band.change_date()
 
